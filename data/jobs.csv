@@ -1,0 +1,52 @@
+id,job
+1,Software Engineer I
+2,Software Engineer II
+3,Software Engineer III
+4,Data Analyst
+5,Data Coordinator
+6,Data Scientist
+7,Data Engineer
+8,Recruiter
+9,HR Generalist
+10,HR Business Partner
+11,Sales Executive
+12,Sales Manager
+13,Account Executive
+14,Marketing Specialist
+15,Marketing Manager
+16,Content Strategist
+17,Financial Analyst
+18,Accountant
+19,Controller
+20,Legal Counsel
+21,Paralegal
+22,Product Manager
+23,Product Owner
+24,UX Designer
+25,UI Designer
+26,Business Development Representative
+27,Partnerships Manager
+28,Research Scientist
+29,Research Assistant
+30,Maintenance Technician
+31,Facilities Coordinator
+32,Supply Chain Analyst
+33,Logistics Coordinator
+34,Procurement Specialist
+35,QA Engineer
+36,DevOps Engineer
+37,Site Reliability Engineer
+38,Solutions Architect
+39,Technical Lead
+40,Engineering Manager
+41,Customer Success Manager
+42,Support Engineer
+43,Technical Writer
+44,Business Analyst
+45,Project Manager
+46,Scrum Master
+47,Network Administrator
+48,Systems Administrator
+49,Database Administrator
+50,Security Analyst
+51,Machine Learning Engineer

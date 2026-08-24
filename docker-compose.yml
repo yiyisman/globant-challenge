@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16
+    container_name: globant_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: globant_challenge
+      POSTGRES_USER: globant
+      POSTGRES_PASSWORD: globant_pw
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Postgres ejecuta automáticamente cualquier .sql en este directorio
+      # la primera vez que arranca con un volumen vacío.
+      - ./sql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U globant -d globant_challenge"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    container_name: globant_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://globant:globant_pw@db:5432/globant_challenge
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app
+      - ./data:/app/data
+      - ./backups:/app/backups
+
+volumes:
+  pgdata:
