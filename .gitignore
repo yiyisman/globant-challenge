@@ -3,4 +3,5 @@ __pycache__/
 .env
 .venv/
 backups/*.avro
+logs/*.log
 .pytest_cache/
