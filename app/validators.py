@@ -99,3 +99,28 @@ def validate_record(
             errors.append("job_id_not_integer")
 
     return ValidationResult(is_valid=len(errors) == 0, errors=errors)
+
+
+def validate_lookup_record(record: dict, name_field: str) -> ValidationResult:
+    """Valida un registro de departments o jobs: id entero + nombre no vacío.
+
+    Estas 2 tablas no tienen las reglas de fecha/FK de hired_employees (su
+    data dictionary solo define id + un campo de nombre), pero se validan
+    igual para no insertar filas rotas.
+    """
+    errors: list[str] = []
+
+    id_raw = record.get("id")
+    if _is_blank(id_raw):
+        errors.append("missing_required_field:id")
+    else:
+        try:
+            int(id_raw)
+        except (ValueError, TypeError):
+            errors.append("id_not_integer")
+
+    name_raw = record.get(name_field)
+    if _is_blank(name_raw):
+        errors.append(f"missing_required_field:{name_field}")
+
+    return ValidationResult(is_valid=len(errors) == 0, errors=errors)
