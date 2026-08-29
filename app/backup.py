@@ -1,20 +1,21 @@
 """
-Backup y restore por tabla en formato AVRO (Challenge #1, puntos 4 y 5).
+Per-table AVRO backup and restore (Challenge #1, points 4 and 5).
 
-Cada tabla se exporta a su propio archivo backups/<tabla>.avro con todas
-sus filas actuales. El schema AVRO se genera a partir de las columnas ya
-definidas en app/db.py (que a su vez reflejan sql/01_ddl.sql), así que si
-el DDL cambia, el backup lo sigue automáticamente.
+Each table is exported to its own backups/<table>.avro file with all of
+its current rows. The AVRO schema is generated from the columns already
+defined in app/db.py (which in turn reflect sql/01_ddl.sql), so if the
+DDL changes, the backup follows automatically.
 
-Restore es un reemplazo completo: borra las filas actuales de la tabla y
-reinserta lo que hay en el AVRO, todo en una sola transacción (si algo
-falla, no se pierde nada de lo que ya estaba). Si otra tabla depende de
-esta por FK (ej. hired_employees depende de departments), Postgres va a
-rechazar el borrado -- es el mismo ON DELETE RESTRICT ya documentado en
-sql/01_ddl.sql, y es intencional: hay que restaurar/vaciar primero la
-tabla dependiente (hired_employees) antes de restaurar departments o jobs.
+Restore is a full replace: it deletes the table's current rows and
+reinserts what's in the AVRO file, all in a single transaction (if
+anything fails, nothing that was already there is lost). If another
+table depends on this one via FK (e.g. hired_employees depends on
+departments), Postgres will reject the delete -- that's the same
+ON DELETE RESTRICT already documented in sql/01_ddl.sql, and it's
+intentional: the dependent table (hired_employees) needs to be
+restored/cleared first before restoring departments or jobs.
 
-Uso:
+Usage:
     python -m app.backup backup  departments|jobs|hired_employees|all
     python -m app.backup restore departments|jobs|hired_employees|all
 """
@@ -52,7 +53,7 @@ def _avro_schema(table: Table) -> dict:
 
 
 def backup_table(table_name: str) -> Path:
-    """Exporta la tabla completa a backups/<table_name>.avro."""
+    """Exports the full table to backups/<table_name>.avro."""
     table = TABLES[table_name]
     schema = _avro_schema(table)
 
@@ -67,11 +68,11 @@ def backup_table(table_name: str) -> Path:
 
 
 def restore_table(table_name: str) -> int:
-    """Reemplaza el contenido de la tabla con lo que hay en su backup AVRO."""
+    """Replaces the table's content with what's in its AVRO backup."""
     table = TABLES[table_name]
     backup_path = BACKUP_DIR / f"{table_name}.avro"
     if not backup_path.exists():
-        raise FileNotFoundError(f"No existe backup para '{table_name}': {backup_path}")
+        raise FileNotFoundError(f"No backup found for '{table_name}': {backup_path}")
 
     with open(backup_path, "rb") as f:
         records = list(fastavro.reader(f))
@@ -86,12 +87,12 @@ def restore_table(table_name: str) -> int:
 
 def _main() -> None:
     if len(sys.argv) != 3 or sys.argv[1] not in ("backup", "restore"):
-        print("Uso: python -m app.backup backup|restore <departments|jobs|hired_employees|all>")
+        print("Usage: python -m app.backup backup|restore <departments|jobs|hired_employees|all>")
         sys.exit(1)
 
     action, target = sys.argv[1], sys.argv[2]
     if target != "all" and target not in TABLES:
-        print(f"Tabla desconocida: {target}. Opciones: {list(TABLES)} o 'all'")
+        print(f"Unknown table: {target}. Options: {list(TABLES)} or 'all'")
         sys.exit(1)
 
     targets = list(TABLES.keys()) if target == "all" else [target]
@@ -99,10 +100,10 @@ def _main() -> None:
     for name in targets:
         if action == "backup":
             path = backup_table(name)
-            print(f"{name}: backup escrito en {path}")
+            print(f"{name}: backup written to {path}")
         else:
             count = restore_table(name)
-            print(f"{name}: {count} filas restauradas")
+            print(f"{name}: {count} rows restored")
 
 
 if __name__ == "__main__":

@@ -1,21 +1,21 @@
 """
-API REST de ingesta de datos (Challenge #1.2).
+Data ingestion REST API (Challenge #1.2).
 
-Endpoints separados por tabla (departments, jobs, hired_employees) en vez
-de uno genérico: mejor tipado de la respuesta y mensajes de error más
-claros por tabla (decisión ya documentada en CLAUDE.md).
+Endpoints are split per table (departments, jobs, hired_employees) instead
+of a single generic one: better typed responses and clearer per-table
+error messages (decision already documented in CLAUDE.md).
 
-Reusa app/validators.py -- las mismas reglas que la migración histórica.
-Los campos de cada fila se reciben como dict[str, Any], NO tipados a
-int/datetime en Pydantic a propósito: si Pydantic rechazara una fila por
-tipo antes de tiempo, tumbaría el batch completo con un 422, violando el
-requisito de que solo la fila inválida se rechace (no el request entero).
-validate_record/validate_lookup_record ya se encargan de esa validación
-"a mano" y son la única fuente de verdad sobre qué es un dato válido.
+Reuses app/validators.py -- the same rules the historical migration uses.
+Each row's fields arrive as dict[str, Any], deliberately NOT typed to
+int/datetime in Pydantic: if Pydantic rejected a row by type ahead of
+time, it would fail the whole batch with a 422, violating the requirement
+that only the invalid row gets rejected (not the entire request).
+validate_record/validate_lookup_record already handle that validation
+"by hand" and are the single source of truth for what counts as valid.
 
-Duplicados: un id que ya existe en la tabla se rechaza fila por fila (no
-tumba el batch) usando SAVEPOINTs de Postgres, para no perder el resto del
-batch por una sola fila repetida.
+Duplicates: an id that already exists in the table is rejected row by row
+(it doesn't fail the batch) using Postgres SAVEPOINTs, so the rest of the
+batch isn't lost because of one repeated row.
 """
 from __future__ import annotations
 
@@ -26,13 +26,14 @@ from pydantic import BaseModel, Field
 from sqlalchemy import Table, select
 from sqlalchemy.exc import IntegrityError
 
+from app.analytics import get_departments_above_average, get_hires_by_quarter
 from app.db import departments, engine, hired_employees, jobs
 from app.invalid_logger import log_invalid_record
 from app.validators import validate_lookup_record, validate_record
 
 app = FastAPI(
     title="Globant Data Engineer Challenge API",
-    description="Ingesta batch para hired_employees, departments y jobs.",
+    description="Batch ingestion for hired_employees, departments and jobs.",
 )
 
 Row = dict[str, Any]
@@ -43,7 +44,7 @@ class BatchIn(BaseModel):
         ...,
         min_length=1,
         max_length=1000,
-        description="Entre 1 y 1000 filas por request.",
+        description="Between 1 and 1000 rows per request.",
     )
 
 
@@ -63,11 +64,40 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+class HiresByQuarterRow(BaseModel):
+    department: str
+    job: str
+    Q1: int
+    Q2: int
+    Q3: int
+    Q4: int
+
+
+class DepartmentAboveAverageRow(BaseModel):
+    id: int
+    department: str
+    hired: int
+
+
+@app.get("/analytics/hires_by_quarter", response_model=list[HiresByQuarterRow])
+def hires_by_quarter() -> list[dict]:
+    """Challenge #2, query 1: 2021 hires by department/job and quarter."""
+    return get_hires_by_quarter()
+
+
+@app.get("/analytics/departments_above_average", response_model=list[DepartmentAboveAverageRow])
+def departments_above_average() -> list[dict]:
+    """Challenge #2, query 2: departments that hired above the average
+    of all departments in 2021."""
+    return get_departments_above_average()
+
+
 def _insert_one_by_one(
     table: Table, clean_rows: list[tuple[Row, dict]]
 ) -> tuple[int, list[RejectedRecord]]:
-    """Inserta cada fila ya validada en su propio SAVEPOINT: si una choca
-    por id duplicado, se descarta solo esa fila y el resto del batch sigue."""
+    """Inserts each already-validated row in its own SAVEPOINT: if one
+    collides on a duplicate id, only that row is dropped and the rest of
+    the batch keeps going."""
     inserted = 0
     rejected: list[RejectedRecord] = []
 
