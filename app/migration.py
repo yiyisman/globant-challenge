@@ -1,17 +1,17 @@
 """
-Migración histórica: carga los 3 CSV originales (data/) a Postgres.
+Historical migration: loads the 3 original CSV files (data/) into Postgres.
 
-Reusa exactamente el mismo validators.validate_record que usarán los
-endpoints de ingesta de la API, para que la carga histórica y la API
-apliquen las mismas reglas (ver CLAUDE.md).
+Reuses the exact same validators.validate_record that the API ingestion
+endpoints use, so the historical load and the API apply the same rules
+(see CLAUDE.md).
 
-Orden de carga: departments y jobs primero (son la FK de
-hired_employees), luego hired_employees. Los ids se preservan tal cual
-vienen del CSV (no son autoincrementales). El script es re-ejecutable:
-usa ON CONFLICT (id) DO NOTHING, así correrlo dos veces no falla ni
-duplica filas.
+Load order: departments and jobs first (they're hired_employees' FKs),
+then hired_employees. Ids are preserved exactly as they come from the
+CSV (they're not auto-incremented). The script is safe to re-run: it
+uses ON CONFLICT (id) DO NOTHING, so running it twice neither fails nor
+duplicates rows.
 
-Uso:
+Usage:
     python -m app.migration
 """
 from __future__ import annotations
@@ -36,8 +36,8 @@ def _read_csv(filename: str) -> list[dict]:
 
 
 def _load_lookup_table(table, csv_filename: str, name_field: str) -> None:
-    """Carga departments.csv o jobs.csv: valida con validators.py (misma
-    regla que usa la API), inserta válidos, loguea inválidos."""
+    """Loads departments.csv or jobs.csv: validates with validators.py
+    (same rule the API uses), inserts valid rows, logs invalid ones."""
     rows = _read_csv(csv_filename)
     to_insert = []
 
@@ -55,7 +55,7 @@ def _load_lookup_table(table, csv_filename: str, name_field: str) -> None:
         with engine.begin() as conn:
             conn.execute(stmt)
 
-    print(f"{table.name}: {len(to_insert)} válidos de {len(rows)} procesados")
+    print(f"{table.name}: {len(to_insert)} valid out of {len(rows)} processed")
 
 
 def _load_hired_employees() -> None:
@@ -92,8 +92,8 @@ def _load_hired_employees() -> None:
             conn.execute(stmt)
 
     print(
-        f"hired_employees: {len(to_insert)} válidos, "
-        f"{invalid_count} inválidos, de {len(rows)} procesados"
+        f"hired_employees: {len(to_insert)} valid, "
+        f"{invalid_count} invalid, out of {len(rows)} processed"
     )
 
 
@@ -104,7 +104,7 @@ def main() -> None:
     _load_lookup_table(jobs, "jobs.csv", "job")
     _load_hired_employees()
 
-    print(f"\nRegistros inválidos logueados en: app/../logs/invalid_records.log")
+    print("\nInvalid records logged to: logs/invalid_records.log")
 
 
 if __name__ == "__main__":

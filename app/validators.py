@@ -1,17 +1,17 @@
 """
-Módulo central de validación para el Globant Data Engineer Challenge.
+Central validation module for the Globant Data Engineer Challenge.
 
-Se usa tanto en la migración histórica (Challenge #1.1) como en los
-endpoints de ingesta de la API (Challenge #1.2), para garantizar que
-ambos caminos apliquen exactamente las mismas reglas. Esto responde
-directamente al assumption documentado: la validación aplica también
-a la carga histórica, no solo a lo que llegue por la API.
+Used both by the historical migration (Challenge #1.1) and by the API
+ingestion endpoints (Challenge #1.2), to guarantee that both paths apply
+exactly the same rules. This directly follows the documented assumption:
+validation also applies to the historical load, not only to what comes
+in through the API.
 
-Reglas implementadas (según el data dictionary del PDF):
-1. Todos los campos son requeridos: id, name, datetime, department_id, job_id
-2. datetime debe estar en formato ISO 8601 (ej. 2021-07-27T16:02:08Z)
-3. department_id debe existir en la tabla departments
-4. job_id debe existir en la tabla jobs
+Rules implemented (per the PDF's data dictionary):
+1. All fields are required: id, name, datetime, department_id, job_id
+2. datetime must be in ISO 8601 format (e.g. 2021-07-27T16:02:08Z)
+3. department_id must exist in the departments table
+4. job_id must exist in the jobs table
 """
 from __future__ import annotations
 
@@ -33,10 +33,10 @@ def _is_blank(value: Any) -> bool:
 
 
 def parse_iso_datetime(value: Any) -> datetime | None:
-    """Acepta estrictamente el formato ISO 8601 con sufijo 'Z' (UTC),
-    tal como el ejemplo del PDF: 2021-07-27T16:02:08Z.
-    Cualquier otro formato (con o sin espacio, sin 'T', sin 'Z',
-    con '/', etc.) se considera inválido.
+    """Strictly accepts ISO 8601 format with a 'Z' suffix (UTC), just like
+    the PDF's example: 2021-07-27T16:02:08Z.
+    Any other format (with or without a space, without 'T', without 'Z',
+    with '/', etc.) is considered invalid.
     """
     if not isinstance(value, str) or not value.endswith("Z"):
         return None
@@ -51,13 +51,13 @@ def validate_record(
     valid_department_ids: set[int],
     valid_job_ids: set[int],
 ) -> ValidationResult:
-    """Valida un único registro de hired_employees.
+    """Validates a single hired_employees record.
 
-    record: dict con claves id, name, datetime, department_id, job_id
-            (tal como vienen de un csv.DictReader o de un JSON de la API).
-    valid_department_ids / valid_job_ids: sets con los ids existentes
-            en las tablas departments y jobs, para chequear las FKs
-            sin necesidad de golpear la base de datos por cada fila.
+    record: dict with keys id, name, datetime, department_id, job_id
+            (as they come from a csv.DictReader or from an API JSON body).
+    valid_department_ids / valid_job_ids: sets of the ids that exist in
+            the departments and jobs tables, to check the FKs without
+            hitting the database on every row.
     """
     errors: list[str] = []
 
@@ -65,7 +65,7 @@ def validate_record(
         if field_name not in record or _is_blank(record.get(field_name)):
             errors.append(f"missing_required_field:{field_name}")
 
-    # id: si viene, debe ser un entero válido.
+    # id: if present, must be a valid integer.
     id_raw = record.get("id")
     if not _is_blank(id_raw):
         try:
@@ -73,12 +73,12 @@ def validate_record(
         except (ValueError, TypeError):
             errors.append("id_not_integer")
 
-    # datetime: formato ISO 8601 estricto con 'Z'.
+    # datetime: strict ISO 8601 format with 'Z'.
     dt_raw = record.get("datetime")
     if not _is_blank(dt_raw) and parse_iso_datetime(dt_raw) is None:
         errors.append("invalid_datetime_format")
 
-    # department_id: debe ser entero y existir en departments.
+    # department_id: must be an integer and exist in departments.
     dept_raw = record.get("department_id")
     if not _is_blank(dept_raw):
         try:
@@ -88,7 +88,7 @@ def validate_record(
         except (ValueError, TypeError):
             errors.append("department_id_not_integer")
 
-    # job_id: debe ser entero y existir en jobs.
+    # job_id: must be an integer and exist in jobs.
     job_raw = record.get("job_id")
     if not _is_blank(job_raw):
         try:
@@ -102,11 +102,11 @@ def validate_record(
 
 
 def validate_lookup_record(record: dict, name_field: str) -> ValidationResult:
-    """Valida un registro de departments o jobs: id entero + nombre no vacío.
+    """Validates a departments or jobs record: integer id + non-empty name.
 
-    Estas 2 tablas no tienen las reglas de fecha/FK de hired_employees (su
-    data dictionary solo define id + un campo de nombre), pero se validan
-    igual para no insertar filas rotas.
+    These 2 tables don't have hired_employees' date/FK rules (their data
+    dictionary only defines id + one name field), but they're still
+    validated to avoid inserting broken rows.
     """
     errors: list[str] = []
 

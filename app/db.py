@@ -1,10 +1,10 @@
 """
-Acceso a base de datos compartido (migración histórica + API).
+Shared database access (historical migration + API).
 
-Se usa SQLAlchemy Core (no ORM declarativo) porque las tablas ya están
-definidas en sql/01_ddl.sql y no necesitamos mapeo objeto-relacional
-completo: solo inserts/selects simples y las 2 queries de agregación
-del Challenge #2, que se escriben mejor como SQL/Core directo.
+SQLAlchemy Core is used (not the declarative ORM) because the tables are
+already defined in sql/01_ddl.sql and we don't need full object-relational
+mapping: just simple inserts/selects and the 2 aggregation queries from
+Challenge #2, which read better as direct SQL/Core.
 """
 from __future__ import annotations
 
@@ -21,9 +21,9 @@ from sqlalchemy import (
     create_engine,
 )
 
-# Fuera de Docker (venv local) la DB se ve en localhost:5432 porque el
-# puerto está publicado en docker-compose.yml. Dentro del contenedor
-# `api`, docker-compose.yml sobreescribe esta variable con host `db`.
+# Outside Docker (local venv) the DB is reachable at localhost:5432
+# because the port is published in docker-compose.yml. Inside the `api`
+# container, docker-compose.yml overrides this variable with host `db`.
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
     "postgresql://globant:globant_pw@localhost:5432/globant_challenge",

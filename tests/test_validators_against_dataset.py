@@ -1,8 +1,8 @@
 """
-Prueba de humo: corre el validador contra el dataset sintético en /data
-y confirma que el conteo de inválidos coincide con dataset_summary.md
-(200 de 2120 filas). No requiere Postgres — es una prueba pura del
-módulo de validación en aislamiento.
+Smoke test: runs the validator against the synthetic dataset in /data
+and confirms the invalid count matches dataset_summary.md (200 out of
+2120 rows). Doesn't require Postgres -- it's a pure test of the
+validation module in isolation.
 """
 import csv
 import sys
@@ -39,9 +39,9 @@ def main() -> None:
                 for err in result.errors:
                     error_breakdown[err] = error_breakdown.get(err, 0) + 1
 
-    print(f"Válidos:   {valid_count}")
-    print(f"Inválidos: {invalid_count}")
-    print("\nDesglose de errores detectados:")
+    print(f"Valid:   {valid_count}")
+    print(f"Invalid: {invalid_count}")
+    print("\nError breakdown:")
     for err, count in sorted(error_breakdown.items()):
         print(f"  {err}: {count}")
 

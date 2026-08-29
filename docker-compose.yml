@@ -11,8 +11,8 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # Postgres ejecuta automáticamente cualquier .sql en este directorio
-      # la primera vez que arranca con un volumen vacío.
+      # Postgres automatically runs any .sql file in this directory the
+      # first time it starts with an empty volume.
       - ./sql:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U globant -d globant_challenge"]

@@ -1,10 +1,10 @@
 """
-Logging estructurado de registros inválidos.
+Structured logging for invalid records.
 
-Decisión (ver CLAUDE.md): archivo de log, no tabla de auditoría aparte.
-Un logger dedicado en JSON Lines (un objeto JSON por línea) para que
-tanto la migración histórica como los endpoints de la API lo reusen y
-el archivo se pueda parsear fácilmente si hace falta revisarlo.
+Decision (see CLAUDE.md): a log file, not a separate audit table. A
+dedicated JSON Lines logger (one JSON object per line) so both the
+historical migration and the API endpoints can reuse it, and the file
+can be easily parsed if it ever needs to be reviewed.
 """
 from __future__ import annotations
 
@@ -34,10 +34,11 @@ def log_invalid_record(
     record: dict[str, Any],
     errors: list[str],
 ) -> None:
-    """Loguea un registro rechazado como una línea JSON.
+    """Logs a rejected record as a single JSON line.
 
-    source: origen del rechazo, ej. "historical_migration" o "api_ingestion".
-    table: tabla destino, ej. "hired_employees".
+    source: origin of the rejection, e.g. "historical_migration" or
+            "api_ingestion".
+    table: destination table, e.g. "hired_employees".
     """
     entry = {
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
