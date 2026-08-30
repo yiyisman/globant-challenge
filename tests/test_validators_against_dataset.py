@@ -20,7 +20,7 @@ def load_ids(filename: str) -> set[int]:
         return {int(row["id"]) for row in reader}
 
 
-def main() -> None:
+def _run_validation() -> tuple[int, int, dict[str, int]]:
     dept_ids = load_ids("departments.csv")
     job_ids = load_ids("jobs.csv")
 
@@ -38,6 +38,23 @@ def main() -> None:
                 invalid_count += 1
                 for err in result.errors:
                     error_breakdown[err] = error_breakdown.get(err, 0) + 1
+
+    return valid_count, invalid_count, error_breakdown
+
+
+def test_validators_detect_exactly_the_known_invalid_rows():
+    valid_count, invalid_count, error_breakdown = _run_validation()
+
+    assert valid_count == 1920
+    assert invalid_count == 200
+    # 8 error categories were seeded into the synthetic dataset on purpose,
+    # 25 rows each -- see CLAUDE.md.
+    assert all(count == 25 for count in error_breakdown.values())
+    assert len(error_breakdown) == 8
+
+
+def main() -> None:
+    valid_count, invalid_count, error_breakdown = _run_validation()
 
     print(f"Valid:   {valid_count}")
     print(f"Invalid: {invalid_count}")
