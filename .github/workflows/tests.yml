@@ -1,0 +1,43 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # A real Postgres for the tests to run against -- conftest.py creates
+    # its own globant_challenge_test database inside this instance, so
+    # this service only needs to exist and be reachable, no manual setup.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: globant_challenge
+          POSTGRES_USER: globant
+          POSTGRES_PASSWORD: globant_pw
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U globant -d globant_challenge"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest tests/ -v
+        env:
+          DATABASE_URL: postgresql://globant:globant_pw@localhost:5432/globant_challenge
